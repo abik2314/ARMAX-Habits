@@ -1,0 +1,206 @@
+@layer base {
+  :root {
+    --app-bg: #070b12;
+    --app-bg-soft: #0b1220;
+    --app-card: rgba(17, 24, 39, 0.74);
+    --app-card-strong: rgba(17, 24, 39, 0.88);
+    --app-border: rgba(255, 255, 255, 0.1);
+    --app-text: #ffffff;
+    --app-muted: #a3b2c7;
+    --app-green: #4ade80;
+    --app-cyan: #22d3ee;
+    --app-purple: #8b5cf6;
+    --app-rose: #fb7185;
+    --app-amber: #fbbf24;
+    --app-shadow: rgba(0, 0, 0, 0.42);
+    --app-glow: rgba(74, 222, 128, 0.28);
+    color-scheme: dark;
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-width: 320px;
+    min-height: 100svh;
+  }
+
+  html {
+    background: var(--app-bg);
+  }
+
+  body {
+    margin: 0;
+    overflow-x: hidden;
+    background: var(--app-bg);
+    color: var(--app-text);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  select,
+  textarea {
+    color: var(--app-text);
+    outline: none;
+  }
+}
+
+@layer utilities {
+  .theme-dark {
+    --app-bg: #070b12;
+    --app-bg-soft: #0b1220;
+    --app-card: rgba(17, 24, 39, 0.74);
+    --app-card-strong: rgba(17, 24, 39, 0.88);
+    --app-border: rgba(255, 255, 255, 0.1);
+    --app-text: #ffffff;
+    --app-muted: #a3b2c7;
+    --app-green: #4ade80;
+    --app-cyan: #22d3ee;
+    --app-purple: #8b5cf6;
+    --app-shadow: rgba(0, 0, 0, 0.42);
+    --app-glow: rgba(74, 222, 128, 0.28);
+    color-scheme: dark;
+  }
+
+  .theme-light {
+    --app-bg: #f7f9fc;
+    --app-bg-soft: #eef4fb;
+    --app-card: rgba(255, 255, 255, 0.75);
+    --app-card-strong: rgba(255, 255, 255, 0.9);
+    --app-border: rgba(17, 24, 39, 0.1);
+    --app-text: #111827;
+    --app-muted: #64748b;
+    --app-green: #16a34a;
+    --app-cyan: #0891b2;
+    --app-purple: #7c3aed;
+    --app-shadow: rgba(15, 23, 42, 0.16);
+    --app-glow: rgba(22, 163, 74, 0.18);
+    color-scheme: light;
+  }
+
+  .theme-system {
+    --app-bg: #070b12;
+    --app-bg-soft: #0b1220;
+    --app-card: rgba(17, 24, 39, 0.74);
+    --app-card-strong: rgba(17, 24, 39, 0.88);
+    --app-border: rgba(255, 255, 255, 0.1);
+    --app-text: #ffffff;
+    --app-muted: #a3b2c7;
+    --app-green: #4ade80;
+    --app-cyan: #22d3ee;
+    --app-purple: #8b5cf6;
+    --app-shadow: rgba(0, 0, 0, 0.42);
+    --app-glow: rgba(74, 222, 128, 0.28);
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: light) {
+    .theme-system {
+      --app-bg: #f7f9fc;
+      --app-bg-soft: #eef4fb;
+      --app-card: rgba(255, 255, 255, 0.75);
+      --app-card-strong: rgba(255, 255, 255, 0.9);
+      --app-border: rgba(17, 24, 39, 0.1);
+      --app-text: #111827;
+      --app-muted: #64748b;
+      --app-green: #16a34a;
+      --app-cyan: #0891b2;
+      --app-purple: #7c3aed;
+      --app-shadow: rgba(15, 23, 42, 0.16);
+      --app-glow: rgba(22, 163, 74, 0.18);
+      color-scheme: light;
+    }
+  }
+
+  .theme-dark,
+  .theme-light,
+  .theme-system {
+    transition:
+      background-color 420ms ease,
+      color 420ms ease,
+      border-color 420ms ease,
+      box-shadow 420ms ease;
+  }
+
+  .aurora-bg {
+    background:
+      radial-gradient(circle at 10% -10%, rgba(74, 222, 128, 0.24), transparent 34%),
+      radial-gradient(circle at 92% 8%, rgba(139, 92, 246, 0.23), transparent 30%),
+      radial-gradient(circle at 44% 28%, rgba(34, 211, 238, 0.16), transparent 28%),
+      linear-gradient(180deg, var(--app-bg), var(--app-bg-soft));
+  }
+
+  .glass-surface {
+    border: 1px solid var(--app-border);
+    background: var(--app-card);
+    box-shadow:
+      0 18px 70px var(--app-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(22px) saturate(1.2);
+  }
+
+  .liquid-button {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--app-green) 44%, transparent);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
+      color-mix(in srgb, var(--app-card-strong) 82%, transparent);
+    box-shadow:
+      0 14px 40px var(--app-shadow),
+      0 0 22px var(--app-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(18px);
+  }
+
+  .liquid-button::after {
+    content: "";
+    position: absolute;
+    inset: -65%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.34), transparent 34%);
+    opacity: 0;
+    transform: scale(0.3);
+    transition:
+      opacity 420ms ease,
+      transform 520ms ease;
+  }
+
+  .liquid-button:active::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .premium-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--app-purple) 50%, transparent) transparent;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--app-purple) 50%, transparent);
+  }
+}
