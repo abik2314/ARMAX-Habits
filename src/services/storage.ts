@@ -31,6 +31,8 @@ export const storageKeys = {
   migration: (userId: AccountUserId) => `armax_habits_migration_${userId}`,
   postponedMigration: (userId: AccountUserId) => `armax_habits_migration_postponed_${userId}`,
   telegramLinkRequest: 'armax_habits_telegram_link_request',
+  telegramSession: 'armax_habits_telegram_session',
+  telegramAccountUserId: 'armax_habits_telegram_account_user_id',
 }
 
 function readRawStorage(key: string) {
@@ -165,6 +167,22 @@ export function getHabitStorageIdentity(): HabitStorageIdentity {
 
   if (telegramId) {
     const rawId = String(telegramId)
+    const userId = toAccountUserId('telegram', rawId)
+
+    return {
+      kind: 'telegram',
+      id: userId,
+      userId,
+      rawId,
+      storageKey: storageKeys.data(userId),
+      legacyStorageKeys: [`armax-habits:user:${rawId}`],
+    }
+  }
+
+  const linkedUserId = readRawStorage(storageKeys.telegramAccountUserId)
+
+  if (linkedUserId?.startsWith('telegram:')) {
+    const rawId = linkedUserId.slice('telegram:'.length)
     const userId = toAccountUserId('telegram', rawId)
 
     return {

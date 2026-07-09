@@ -1,15 +1,42 @@
-import type { TelegramLinkRequest, TelegramLinkResponse, TelegramLinkStatusResponse } from '../types/telegramLink'
+import type {
+  SyncPullResponse,
+  SyncPushResponse,
+  TelegramLinkRequest,
+  TelegramLinkResponse,
+  TelegramLinkStatusResponse,
+  TelegramSessionResponse,
+} from '../types/telegramLink'
 
 const defaultPollingIntervalMs = 2500
+const missingBackendMessage =
+  'Supabase backend для привязки Telegram не настроен. Укажите VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY, затем задеплойте Edge Functions.'
 
-function getApiBaseUrl() {
-  const configured = import.meta.env.VITE_ARMAX_API_BASE_URL?.trim()
+function getSupabaseFunctionsBaseUrl() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
 
-  return configured ? configured.replace(/\/$/, '') : ''
+  if (!supabaseUrl) {
+    throw new Error(missingBackendMessage)
+  }
+
+  return `${supabaseUrl.replace(/\/$/, '')}/functions/v1`
 }
 
-function endpoint(path: string) {
-  return `${getApiBaseUrl()}${path}`
+function getPublicHeaders(extraHeaders?: HeadersInit) {
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+  const headers = new Headers(extraHeaders)
+
+  headers.set('Content-Type', 'application/json')
+
+  if (anonKey) {
+    headers.set('apikey', anonKey)
+    headers.set('Authorization', `Bearer ${anonKey}`)
+  }
+
+  return headers
+}
+
+function endpoint(functionName: string) {
+  return `${getSupabaseFunctionsBaseUrl()}/${functionName}`
 }
 
 function isJsonResponse(response: Response) {
@@ -22,20 +49,25 @@ async function readApiError(response: Response) {
     return payload.message ?? payload.error ?? `HTTP ${response.status}`
   }
 
-  return response.status === 404
-    ? 'Сервер привязки Telegram не настроен. Нужны защищённые API и база данных.'
-    : `HTTP ${response.status}`
+  return response.status === 404 ? 'Supabase Edge Function не найдена или ещё не задеплоена.' : `HTTP ${response.status}`
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(endpoint(path), {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  })
+async function requestJson<T>(functionName: string, init?: RequestInit): Promise<T> {
+  let response: Response
+
+  try {
+    response = await fetch(endpoint(functionName), {
+      credentials: 'include',
+      headers: getPublicHeaders(init?.headers),
+      ...init,
+    })
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error('Не удалось подключиться к Supabase backend. Проверьте URL проекта и деплой Edge Functions.')
+    }
+
+    throw error
+  }
 
   if (!response.ok) {
     throw new Error(await readApiError(response))
@@ -45,7 +77,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function createTelegramLinkRequest(request: TelegramLinkRequest) {
-  const response = await requestJson<TelegramLinkResponse>('/api/telegram/link/start', {
+  const response = await requestJson<TelegramLinkResponse>('create-link-request', {
     method: 'POST',
     body: JSON.stringify(request),
   })
@@ -56,15 +88,50 @@ export async function createTelegramLinkRequest(request: TelegramLinkRequest) {
   }
 }
 
-export function getTelegramLinkStatus(requestId: string) {
+export function getTelegramLinkStatus(linkToken: string) {
   return requestJson<TelegramLinkStatusResponse>(
-    `/api/telegram/link/status?requestId=${encodeURIComponent(requestId)}`,
+    `get-link-status?linkToken=${encodeURIComponent(linkToken)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
   )
 }
 
-export function cancelTelegramLinkRequest(requestId: string) {
-  return requestJson<TelegramLinkStatusResponse>('/api/telegram/link/cancel', {
+export function createTelegramSession(linkToken: string) {
+  return requestJson<TelegramSessionResponse>('create-session', {
     method: 'POST',
-    body: JSON.stringify({ requestId }),
+    body: JSON.stringify({ linkToken }),
+  })
+}
+
+export function createTelegramSessionFromInitData(initData: string) {
+  return requestJson<TelegramSessionResponse>('create-session', {
+    method: 'POST',
+    body: JSON.stringify({ initData }),
+  })
+}
+
+export function syncPull(sessionToken: string) {
+  return requestJson<SyncPullResponse>('sync-pull', {
+    method: 'POST',
+    headers: {
+      'x-armax-session': sessionToken,
+    },
+    body: JSON.stringify({}),
+  })
+}
+
+export function syncPush(request: TelegramLinkRequest, sessionToken?: string) {
+  return requestJson<SyncPushResponse>('sync-push', {
+    method: 'POST',
+    headers: sessionToken
+      ? {
+          'x-armax-session': sessionToken,
+        }
+      : undefined,
+    body: JSON.stringify(request),
   })
 }
