@@ -9,13 +9,30 @@ export class HttpError extends Error {
 }
 
 function getAllowedOrigin(request: Request) {
-  const configured = Deno.env.get('APP_PUBLIC_URL')?.trim()
+  const requestOrigin = request.headers.get('origin')?.replace(/\/$/, '') ?? ''
+  const configuredOrigins = (Deno.env.get('APP_PUBLIC_URL') ?? '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+  const allowedOrigins = new Set([
+    ...configuredOrigins,
+    'https://armax-habits.vercel.app',
+  ])
 
-  if (configured) {
-    return configured.replace(/\/$/, '')
+  if (requestOrigin && (allowedOrigins.has(requestOrigin) || isLocalDevelopmentOrigin(requestOrigin))) {
+    return requestOrigin
   }
 
-  return request.headers.get('origin') ?? '*'
+  return configuredOrigins[0] ?? 'https://armax-habits.vercel.app'
+}
+
+function isLocalDevelopmentOrigin(origin: string) {
+  try {
+    const url = new URL(origin)
+    return url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]'
+  } catch {
+    return false
+  }
 }
 
 export function corsHeaders(request: Request) {

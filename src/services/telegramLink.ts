@@ -9,34 +9,75 @@ import type {
 
 const defaultPollingIntervalMs = 2500
 const missingBackendMessage =
-  'Supabase backend для привязки Telegram не настроен. Укажите VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY, затем задеплойте Edge Functions.'
+  'Supabase backend для привязки Telegram не настроен. Укажите VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY и задеплойте Edge Functions.'
 
-function getSupabaseFunctionsBaseUrl() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
+interface SupabaseFrontendEnv {
+  supabaseUrl: string
+  anonKey: string
+}
 
-  if (!supabaseUrl) {
+export interface TelegramBackendDiagnostics {
+  isConfigured: boolean
+  supabaseUrlFound: boolean
+  anonKeyFound: boolean
+  functionsEndpoint?: string
+  message?: string
+}
+
+function readSupabaseFrontendEnv() {
+  return {
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL?.trim() ?? '',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? '',
+  }
+}
+
+function normalizeSupabaseUrl(supabaseUrl: string) {
+  return supabaseUrl
+    .replace(/\/+$/, '')
+    .replace(/\/rest\/v1$/i, '')
+    .replace(/\/functions\/v1$/i, '')
+}
+
+export function getTelegramLinkBackendDiagnostics(): TelegramBackendDiagnostics {
+  const { supabaseUrl, anonKey } = readSupabaseFrontendEnv()
+  const supabaseUrlFound = Boolean(supabaseUrl)
+  const anonKeyFound = Boolean(anonKey)
+  const isConfigured = supabaseUrlFound && anonKeyFound
+
+  return {
+    isConfigured,
+    supabaseUrlFound,
+    anonKeyFound,
+    functionsEndpoint: supabaseUrlFound ? `${normalizeSupabaseUrl(supabaseUrl)}/functions/v1` : undefined,
+    message: isConfigured ? undefined : missingBackendMessage,
+  }
+}
+
+function requireSupabaseFrontendEnv(): SupabaseFrontendEnv {
+  const env = readSupabaseFrontendEnv()
+
+  if (!env.supabaseUrl || !env.anonKey) {
     throw new Error(missingBackendMessage)
   }
 
-  return `${supabaseUrl.replace(/\/$/, '')}/functions/v1`
-}
-
-function getPublicHeaders(extraHeaders?: HeadersInit) {
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
-  const headers = new Headers(extraHeaders)
-
-  headers.set('Content-Type', 'application/json')
-
-  if (anonKey) {
-    headers.set('apikey', anonKey)
-    headers.set('Authorization', `Bearer ${anonKey}`)
-  }
-
-  return headers
+  return env
 }
 
 function endpoint(functionName: string) {
-  return `${getSupabaseFunctionsBaseUrl()}/${functionName}`
+  const { supabaseUrl } = requireSupabaseFrontendEnv()
+
+  return `${normalizeSupabaseUrl(supabaseUrl)}/functions/v1/${functionName}`
+}
+
+function getPublicHeaders(extraHeaders?: HeadersInit) {
+  const { anonKey } = requireSupabaseFrontendEnv()
+  const headers = new Headers(extraHeaders)
+
+  headers.set('Content-Type', 'application/json')
+  headers.set('apikey', anonKey)
+  headers.set('Authorization', `Bearer ${anonKey}`)
+
+  return headers
 }
 
 function isJsonResponse(response: Response) {
@@ -63,7 +104,7 @@ async function requestJson<T>(functionName: string, init?: RequestInit): Promise
     })
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error('Не удалось подключиться к Supabase backend. Проверьте URL проекта и деплой Edge Functions.')
+      throw new Error('Не удалось подключиться к Supabase backend. Проверьте URL проекта, CORS и деплой Edge Functions.')
     }
 
     throw error
@@ -79,7 +120,12 @@ async function requestJson<T>(functionName: string, init?: RequestInit): Promise
 export async function createTelegramLinkRequest(request: TelegramLinkRequest) {
   const response = await requestJson<TelegramLinkResponse>('create-link-request', {
     method: 'POST',
-    body: JSON.stringify(request),
+    body: JSON.stringify({
+      guestId: request.guestId,
+      deviceId: request.deviceId,
+      returnUrl: request.returnUrl,
+      snapshot: request.snapshot,
+    }),
   })
 
   return {
@@ -89,15 +135,10 @@ export async function createTelegramLinkRequest(request: TelegramLinkRequest) {
 }
 
 export function getTelegramLinkStatus(linkToken: string) {
-  return requestJson<TelegramLinkStatusResponse>(
-    `get-link-status?linkToken=${encodeURIComponent(linkToken)}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    },
-  )
+  return requestJson<TelegramLinkStatusResponse>('get-link-status', {
+    method: 'POST',
+    body: JSON.stringify({ linkToken }),
+  })
 }
 
 export function createTelegramSession(linkToken: string) {

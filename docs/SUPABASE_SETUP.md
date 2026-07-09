@@ -34,14 +34,17 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 
+`VITE_SUPABASE_URL` лучше задавать как корень проекта без `/rest/v1`. Frontend дополнительно срезает `/rest/v1` и `/functions/v1`, если они случайно попали в env.
+
 Supabase Edge Functions secrets:
 
 ```bash
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 supabase secrets set TELEGRAM_BOT_TOKEN=<telegram-bot-token>
 supabase secrets set TELEGRAM_BOT_USERNAME=<bot-username-without-at>
 supabase secrets set APP_PUBLIC_URL=https://<your-vercel-domain>
 ```
+
+`SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` обычно доступны внутри hosted Supabase Edge Functions автоматически. Если `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...` запрещён как reserved name, это нормально: не задавай его вручную. Для локального `supabase functions serve` можно положить `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` в локальный `.env`, который игнорируется Git.
 
 Опционально для защиты webhook:
 
@@ -50,6 +53,8 @@ supabase secrets set TELEGRAM_WEBHOOK_SECRET=<random-secret>
 ```
 
 `TELEGRAM_BOT_TOKEN` и `SUPABASE_SERVICE_ROLE_KEY` нельзя добавлять в `.env` frontend bundle и нельзя называть с префиксом `VITE_`.
+
+CORS helper принимает `APP_PUBLIC_URL`, `https://armax-habits.vercel.app` и localhost/127.0.0.1 для разработки.
 
 ## 4. Задеплоить Edge Functions
 

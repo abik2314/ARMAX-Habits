@@ -5,6 +5,7 @@ import {
   createTelegramLinkRequest,
   createTelegramSession,
   createTelegramSessionFromInitData,
+  getTelegramLinkBackendDiagnostics,
   getTelegramLinkStatus,
   syncPull,
 } from '../../services/telegramLink'
@@ -99,6 +100,8 @@ export function TelegramConnectionPanel() {
   const [panelState, setPanelState] = useState<PanelState>(() => (loadSavedRequest() ? 'pending' : 'idle'))
   const [miniAppRestoreState, setMiniAppRestoreState] = useState<MiniAppRestoreState>('idle')
   const [message, setMessage] = useState('')
+  const [lastBackendStatus, setLastBackendStatus] = useState('')
+  const backendDiagnostics = useMemo(() => getTelegramLinkBackendDiagnostics(), [])
   const identity = getHabitStorageIdentity()
   const telegramLabel = settings.profile.profileUsername
     ? `@${settings.profile.profileUsername}`
@@ -135,11 +138,13 @@ export function TelegramConnectionPanel() {
         }
 
         await restoreSnapshot(session)
+        setLastBackendStatus('create-session:initData ok')
         setMiniAppRestoreState('done')
         setMessage('Данные Telegram-профиля восстановлены')
       } catch (error) {
         if (isActive) {
           setMiniAppRestoreState('failed')
+          setLastBackendStatus('create-session:initData failed')
           setMessage(error instanceof Error ? error.message : 'Не удалось восстановить Telegram-сессию')
         }
       }
@@ -167,18 +172,20 @@ export function TelegramConnectionPanel() {
       clearRequest()
       setSavedRequest(null)
       setPanelState('completed')
+      setLastBackendStatus('create-session + sync-pull ok')
       setMessage('Telegram подключён. Данные синхронизированы с сервером.')
     }
 
     const poll = async () => {
       try {
         const response = await getTelegramLinkStatus(savedRequest.linkToken)
+        setLastBackendStatus(`get-link-status: ${response.status}`)
 
         if (!isActive || response.status === 'pending') {
           return
         }
 
-        if (response.status === 'completed') {
+        if (response.status === 'completed' || response.status === 'approved') {
           await finishLinking()
           return
         }
@@ -190,6 +197,7 @@ export function TelegramConnectionPanel() {
       } catch (error) {
         if (isActive) {
           setPanelState('failed')
+          setLastBackendStatus('get-link-status failed')
           setMessage(error instanceof Error ? error.message : 'Не удалось проверить статус привязки')
         }
       }
@@ -215,7 +223,6 @@ export function TelegramConnectionPanel() {
 
     try {
       const response = await createTelegramLinkRequest({
-        guestUserId: identity.userId,
         guestId: identity.userId,
         deviceId: getOrCreateDeviceId(),
         returnUrl: window.location.href,
@@ -230,14 +237,16 @@ export function TelegramConnectionPanel() {
       }
 
       saveRequest(nextRequest)
-      setSavedRequest(nextRequest)
-      setPanelState('pending')
-      setMessage('Ожидаем подтверждение в Telegram')
-      openTelegram(nextRequest.telegramUrl)
-    } catch (error) {
-      setPanelState('failed')
-      setMessage(error instanceof Error ? error.message : 'Не удалось создать запрос привязки')
-    }
+        setSavedRequest(nextRequest)
+        setPanelState('pending')
+        setLastBackendStatus('create-link-request ok')
+        setMessage('Ожидаем подтверждение в Telegram')
+        openTelegram(nextRequest.telegramUrl)
+      } catch (error) {
+        setPanelState('failed')
+        setLastBackendStatus('create-link-request failed')
+        setMessage(error instanceof Error ? error.message : 'Не удалось создать запрос привязки')
+      }
   }
 
   const cancelLinking = () => {
@@ -246,6 +255,15 @@ export function TelegramConnectionPanel() {
     setPanelState('declined')
     setMessage('Подключение Telegram отменено')
   }
+
+  const devDiagnostics = import.meta.env.DEV ? (
+    <div className="mt-3 rounded-[18px] border border-[var(--app-border)] bg-white/[0.035] p-3 text-[11px] leading-5 text-[var(--app-muted)]">
+      <div>Supabase URL: {backendDiagnostics.supabaseUrlFound ? 'найден' : 'не найден'}</div>
+      <div>Anon key: {backendDiagnostics.anonKeyFound ? 'найден' : 'не найден'}</div>
+      <div>Functions endpoint: {backendDiagnostics.functionsEndpoint ?? 'не настроен'}</div>
+      <div>Последний статус: {lastBackendStatus || panelState}</div>
+    </div>
+  ) : null
 
   if (environment.isTelegram) {
     const hasTelegramProfile = identity.kind === 'telegram'
@@ -279,6 +297,7 @@ export function TelegramConnectionPanel() {
             {message}
           </div>
         ) : null}
+        {devDiagnostics}
       </GlassCard>
     )
   }
@@ -291,6 +310,7 @@ export function TelegramConnectionPanel() {
           <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--app-green)]" />
           <span>{telegramLabel || 'Telegram-профиль'}</span>
         </div>
+        {devDiagnostics}
       </GlassCard>
     )
   }
@@ -361,6 +381,7 @@ export function TelegramConnectionPanel() {
           <span>{message}</span>
         </div>
       ) : null}
+      {devDiagnostics}
     </GlassCard>
   )
 }

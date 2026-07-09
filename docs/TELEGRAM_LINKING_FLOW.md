@@ -59,5 +59,6 @@ Merge guest -> Telegram выполняется в PostgreSQL RPC `complete_teleg
 
 - Без Supabase keys и Telegram bot token нельзя проверить реальный webhook и деплой.
 - HttpOnly cookie выставляется Edge Function, но при cross-origin Vercel -> Supabase браузеры могут ограничивать third-party cookies. Поэтому frontend также использует session token в `x-armax-session`.
+- Frontend считает backend готовым только когда в build доступны `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`.
 - Настоящее удаление/отключение Telegram account не реализовано: текущий этап только создаёт привязку, session и sync.
 - Conflict resolution сейчас deterministic и conservative; для сложных конфликтов UI выбора версии можно добавить отдельным этапом.

@@ -5,8 +5,8 @@ import type { TelegramProfile } from './telegram'
 export type TelegramLinkStatus = 'pending' | 'approved' | 'declined' | 'expired' | 'completed' | 'failed'
 
 export interface TelegramLinkRequest {
-  guestUserId: AccountUserId
-  guestId?: AccountUserId
+  guestId: AccountUserId
+  guestUserId?: AccountUserId
   deviceId: string
   returnUrl: string
   snapshot?: ExportedHabitData
