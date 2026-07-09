@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useHabitStore } from '../../store/habitsStore'
 import { platformService } from '../../services/platform'
 import {
@@ -14,7 +14,8 @@ import { GlassCard } from '../ui/GlassCard'
 import { SectionHeader } from '../ui/SectionHeader'
 
 export function UserBindingGate() {
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const updateSettings = useHabitStore((state) => state.updateSettings)
   const [isBindOpen, setBindOpen] = useState(false)
 
@@ -33,13 +34,14 @@ export function UserBindingGate() {
     const telegramName = `${telegramUser.firstName}${telegramUser.lastName ? ` ${telegramUser.lastName}` : ''}`.trim()
     const currentProfile = settings.profile
     const shouldUseTelegramName =
-      currentProfile.profileNameSource !== 'manual' && (!currentProfile.profileName || currentProfile.telegramId !== identity.id)
+      currentProfile.profileNameSource !== 'manual' &&
+      (!currentProfile.profileName || currentProfile.telegramId !== identity.rawId)
     const shouldUseTelegramAvatar =
       currentProfile.profileAvatarSource !== 'manual' &&
-      (!currentProfile.profileAvatarData || currentProfile.telegramId !== identity.id)
+      (!currentProfile.profileAvatarData || currentProfile.telegramId !== identity.rawId)
     const nextProfile = {
       ...currentProfile,
-      telegramId: identity.id,
+      telegramId: identity.rawId,
       deviceId: platformService.getDeviceId(),
       languageCode: telegramUser.languageCode,
       profileUsername: telegramUser.username ?? currentProfile.profileUsername,
@@ -97,11 +99,11 @@ export function UserBindingGate() {
       <GlassCard strong className="w-full max-w-[420px]">
         <SectionHeader
           title="Найдены локальные данные"
-          subtitle="Можно привязать старые привычки, профиль, звёзды и достижения к Telegram профилю."
+          subtitle="Можно перенести старые привычки, профиль, звёзды и достижения в локальный Telegram-профиль на этом устройстве. Это не заменяет серверную привязку аккаунта."
         />
         <div className="grid gap-2">
           <AnimatedButton type="button" variant="primary" onClick={bindData}>
-            Привязать
+            Перенести локально
           </AnimatedButton>
           <AnimatedButton type="button" onClick={startClean}>
             Начать чистый профиль

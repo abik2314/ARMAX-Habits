@@ -452,7 +452,7 @@ export function createHabit(draft: HabitDraft, id = createId()) {
     title: draft.title.trim(),
     description: draft.description.trim(),
     id,
-    userId: identity.kind === 'telegram' ? identity.id : undefined,
+    userId: identity.userId,
     deviceId: getOrCreateDeviceId(),
     createdAt: now,
     updatedAt: now,
@@ -597,6 +597,7 @@ function normalizePath(value: unknown): HabitPathSettings {
 
 export function normalizeHabit(rawHabit: Partial<Habit>, index = 0): Habit {
   const fallback = createDefaultHabits()[index % createDefaultHabits().length]
+  const identity = getHabitStorageIdentity()
   const goal = rawHabit.goal ?? fallback.goal
   const now = new Date().toISOString()
   const validIcons = new Set(iconOptions.map((option) => option.value))
@@ -616,7 +617,7 @@ export function normalizeHabit(rawHabit: Partial<Habit>, index = 0): Habit {
 
   return {
     id: rawHabit.id ?? createId('migrated'),
-    userId: rawHabit.userId,
+    userId: rawHabit.userId ?? identity.userId,
     deviceId: rawHabit.deviceId ?? getOrCreateDeviceId(),
     title: rawHabit.title?.trim() || fallback.title,
     description: rawHabit.description ?? fallback.description,

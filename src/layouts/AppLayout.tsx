@@ -1,18 +1,24 @@
 import { AnimatePresence } from 'framer-motion'
+import { useMemo } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AchievementCelebration } from '../components/achievements/AchievementCelebration'
+import { PwaUpdatePrompt } from '../components/system/PwaUpdatePrompt'
 import { UserBindingGate } from '../components/system/UserBindingGate'
 import { BottomNavigation } from '../components/ui/BottomNavigation'
 import { PageTransition } from '../components/ui/PageTransition'
 import { useTelegramApp } from '../hooks/useTelegramApp'
+import { useLaunchEnvironment } from '../hooks/useLaunchEnvironment'
 import { useResolvedTheme } from '../hooks/useResolvedTheme'
 import { useHabitStore } from '../store/habitsStore'
 import { cn } from '../utils/cn'
+import { normalizeSettings } from '../utils/habits'
 
 export function AppLayout() {
   useTelegramApp()
+  useLaunchEnvironment()
   const location = useLocation()
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const resolvedTheme = useResolvedTheme(settings.theme)
   const builtInBackgrounds = {
     aurora: '',
@@ -40,7 +46,13 @@ export function AppLayout() {
       <main className="premium-scrollbar relative mx-auto flex min-h-svh w-full max-w-[480px] flex-col overflow-hidden border-x border-[var(--app-border)]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[linear-gradient(135deg,rgba(74,222,128,0.14),rgba(34,211,238,0.12)_44%,rgba(139,92,246,0.14))]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[repeating-linear-gradient(115deg,rgba(255,255,255,0.055)_0,rgba(255,255,255,0.055)_1px,transparent_1px,transparent_18px)] opacity-35" />
-        <section className="relative flex-1 px-4 pb-28 pt-[calc(18px+env(safe-area-inset-top))]">
+        <section
+          className="relative flex-1 pb-28 pt-[calc(18px+env(safe-area-inset-top)+var(--telegram-safe-area-top,0px))]"
+          style={{
+            paddingLeft: 'calc(1rem + env(safe-area-inset-left) + var(--telegram-safe-area-left, 0px))',
+            paddingRight: 'calc(1rem + env(safe-area-inset-right) + var(--telegram-safe-area-right, 0px))',
+          }}
+        >
           <AnimatePresence mode="wait">
             <PageTransition pageKey={location.pathname}>
               <Outlet />
@@ -49,6 +61,7 @@ export function AppLayout() {
         </section>
         <BottomNavigation />
       </main>
+      <PwaUpdatePrompt />
       <UserBindingGate />
       {settings.modules.achievements ? <AchievementCelebration /> : null}
     </div>

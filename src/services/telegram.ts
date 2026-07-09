@@ -5,10 +5,10 @@ import {
   hapticFeedbackSelectionChanged,
   init,
   initDataUser,
+  isThemeParamsDark,
   miniAppReady,
   mountMiniAppSync,
   restoreInitData,
-  isThemeParamsDark,
   setMiniAppBackgroundColor,
   setMiniAppBottomBarColor,
   setMiniAppHeaderColor,
@@ -17,18 +17,22 @@ import {
   type User,
 } from '@telegram-apps/sdk'
 import type { TelegramProfile } from '../types/telegram'
+import { getLaunchEnvironment, getTelegramWebApp } from './runtimeEnvironment'
+
+interface LegacyTelegramUser {
+  id?: number
+  first_name?: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  language_code?: string
+  is_premium?: boolean
+}
 
 interface LegacyTelegramWebApp {
+  initData?: string
   initDataUnsafe?: {
-    user?: {
-      id?: number
-      first_name?: string
-      last_name?: string
-      username?: string
-      photo_url?: string
-      language_code?: string
-      is_premium?: boolean
-    }
+    user?: LegacyTelegramUser
   }
   HapticFeedback?: {
     impactOccurred?: (style: ImpactHapticFeedbackStyle) => void
@@ -41,27 +45,21 @@ interface LegacyTelegramWebApp {
   setHeaderColor?: (color: string) => void
 }
 
-interface LegacyTelegramWindow extends Window {
-  Telegram?: {
-    WebApp?: LegacyTelegramWebApp
-  }
-}
-
 let cleanupSdk: VoidFunction | undefined
 
 function getLegacyWebApp() {
-  return (window as LegacyTelegramWindow).Telegram?.WebApp
+  return getTelegramWebApp() as LegacyTelegramWebApp | undefined
 }
 
-function toProfile(user: User | NonNullable<LegacyTelegramWebApp['initDataUnsafe']>['user']): TelegramProfile {
+function toProfile(user: User | LegacyTelegramUser): TelegramProfile {
   return {
-    id: user?.id,
-    firstName: user?.first_name ?? 'Гость',
-    lastName: user?.last_name,
-    username: user?.username,
-    photoUrl: user?.photo_url,
-    languageCode: user?.language_code,
-    isPremium: user?.is_premium,
+    id: user.id,
+    firstName: user.first_name ?? 'Гость',
+    lastName: user.last_name,
+    username: user.username,
+    photoUrl: user.photo_url,
+    languageCode: user.language_code,
+    isPremium: user.is_premium,
   }
 }
 
@@ -73,7 +71,17 @@ function safeCall(callback: () => void) {
   }
 }
 
+export function getTelegramInitData() {
+  return getLegacyWebApp()?.initData ?? ''
+}
+
 export function setupTelegramApp() {
+  const environment = getLaunchEnvironment()
+
+  if (!environment.isTelegram) {
+    return undefined
+  }
+
   if (!cleanupSdk) {
     safeCall(() => {
       cleanupSdk = init({ acceptCustomStyles: false })
@@ -122,6 +130,10 @@ export function setupTelegramApp() {
 }
 
 export function getTelegramProfile(): TelegramProfile | null {
+  if (!getLaunchEnvironment().isTelegram) {
+    return null
+  }
+
   safeCall(() => restoreInitData())
 
   try {
@@ -172,6 +184,10 @@ export function hapticSelection() {
 }
 
 export function getTelegramPreferredTheme(): 'dark' | 'light' | null {
+  if (!getLaunchEnvironment().isTelegram) {
+    return null
+  }
+
   try {
     const isDark = isThemeParamsDark()
     return isDark ? 'dark' : 'light'

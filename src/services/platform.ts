@@ -1,22 +1,13 @@
 import { getTelegramPreferredTheme, getTelegramProfile, hapticImpact } from './telegram'
 import { getOrCreateDeviceId } from './storage'
-
-interface CapacitorWindow extends Window {
-  Capacitor?: {
-    isNativePlatform?: () => boolean
-  }
-}
+import { getLaunchEnvironment } from './runtimeEnvironment'
 
 export const platformService = {
-  isTelegram: () =>
-    typeof window !== 'undefined' &&
-    (Boolean((window as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp) || Boolean(getTelegramProfile()?.id)),
-  isPWA: () =>
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(display-mode: standalone)').matches ||
-      Boolean((navigator as { standalone?: boolean }).standalone)),
-  isCapacitor: () =>
-    typeof window !== 'undefined' && Boolean((window as CapacitorWindow).Capacitor?.isNativePlatform?.()),
+  getEnvironment: () => getLaunchEnvironment(),
+  isTelegram: () => getLaunchEnvironment().isTelegram,
+  isPWA: () => getLaunchEnvironment().isPwa,
+  isIOS: () => getLaunchEnvironment().isIos,
+  isCapacitor: () => getLaunchEnvironment().isCapacitor,
   isOnline: () => (typeof navigator === 'undefined' ? true : navigator.onLine),
   hapticFeedback: (style: Parameters<typeof hapticImpact>[0] = 'light') => hapticImpact(style),
   getTelegramUser: () => getTelegramProfile(),

@@ -28,7 +28,7 @@ import { useHabitStore } from '../store/habitsStore'
 import type { DailyReport, HabitDraft, HabitModuleSettings } from '../types/habit'
 import { cn } from '../utils/cn'
 import { dateKey, formatDisplayDate } from '../utils/date'
-import { moodOptions, moodTone } from '../utils/habits'
+import { moodOptions, moodTone, normalizeSettings } from '../utils/habits'
 import {
   getDashboardStats,
   getHabitProgress,
@@ -54,7 +54,8 @@ export function TodayPage() {
   const moodEntries = useHabitStore((state) => state.moodEntries)
   const diaryEntries = useHabitStore((state) => state.diaryEntries)
   const workLogs = useHabitStore((state) => state.workLogs)
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const addHabit = useHabitStore((state) => state.addHabit)
   const updateHabit = useHabitStore((state) => state.updateHabit)
   const deleteHabit = useHabitStore((state) => state.deleteHabit)

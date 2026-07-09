@@ -2,13 +2,15 @@ import { AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo } from 'react'
 import { useHabitStore } from '../../store/habitsStore'
 import type { Achievement } from '../../types/habit'
+import { normalizeSettings } from '../../utils/habits'
 import { getAchievementResults, getBaseStats } from '../../utils/stats'
 import { AchievementModal } from './AchievementModal'
 
 export function AchievementCelebration() {
   const habits = useHabitStore((state) => state.habits)
   const moodEntries = useHabitStore((state) => state.moodEntries)
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const workLogs = useHabitStore((state) => state.workLogs)
   const awards = useHabitStore((state) => state.awards)
   const lastCelebration = useHabitStore((state) => state.lastCelebration)

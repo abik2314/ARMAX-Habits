@@ -30,6 +30,7 @@ import {
   habitPathMilestones,
   goalOptions,
   iconOptions,
+  normalizeSettings,
   subtaskTemplates,
   typeOptions,
 } from '../../utils/habits'
@@ -108,7 +109,8 @@ function isSameDraft(a: HabitDraft, b: HabitDraft) {
 }
 
 export function HabitEditorSheet({ isOpen, habit, onClose, onSave, onDelete }: HabitEditorSheetProps) {
-  const modules = useHabitStore((state) => state.settings.modules)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const modules = useMemo(() => normalizeSettings(rawSettings).modules, [rawSettings])
   const initialDraft = useMemo(() => toDraft(habit), [habit])
   const [draft, setDraft] = useState<HabitDraft>(initialDraft)
   const [showExtraIcons, setShowExtraIcons] = useState(false)

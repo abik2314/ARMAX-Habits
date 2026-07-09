@@ -15,7 +15,7 @@ export function BottomNavigation() {
   const location = useLocation()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[480px] px-3 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[480px] px-3 pb-[calc(10px+env(safe-area-inset-bottom)+var(--telegram-safe-area-bottom,0px))] pt-2">
       <div className="glass-surface grid grid-cols-4 gap-1 rounded-[24px] p-1.5">
         {navItems.map((item) => {
           const isActive = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)

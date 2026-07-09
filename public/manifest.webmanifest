@@ -1,13 +1,17 @@
 {
+  "id": "/",
   "name": "ARMAX Habits",
   "short_name": "ARMAX",
-  "description": "Мультиплатформенная система формирования привычек.",
+  "description": "Мультиплатформенная система формирования привычек для браузера, Telegram Mini App и iPhone PWA.",
+  "lang": "ru",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#070B12",
   "theme_color": "#070B12",
+  "categories": ["productivity", "health", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.svg",

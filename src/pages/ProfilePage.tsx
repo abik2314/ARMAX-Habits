@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Camera, Database, Download, GripVertical, RotateCcw
 import { useEffect, useMemo, useState } from 'react'
 import type { BuiltInBackground, HabitModuleSettings, HabitSettings } from '../types/habit'
 import { AchievementGrid } from '../components/achievements/AchievementGrid'
+import { TelegramConnectionPanel } from '../components/system/TelegramConnectionPanel'
 import { AnimatedButton } from '../components/ui/AnimatedButton'
 import { AnimatedProgress } from '../components/ui/AnimatedProgress'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -68,7 +69,8 @@ async function compressImage(file: File, maxSize = 512, quality = 0.82) {
 export function ProfilePage() {
   const habits = useHabitStore((state) => state.habits)
   const moodEntries = useHabitStore((state) => state.moodEntries)
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const workLogs = useHabitStore((state) => state.workLogs)
   const resetData = useHabitStore((state) => state.resetData)
   const clearTodayMarks = useHabitStore((state) => state.clearTodayMarks)
@@ -407,6 +409,8 @@ export function ProfilePage() {
           </div>
         </div>
       </GlassCard>
+
+      <TelegramConnectionPanel />
 
       <GlassCard>
         <SectionHeader title="Настройки" subtitle="профиль, тема, фон и модули" />

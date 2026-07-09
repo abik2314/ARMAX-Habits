@@ -18,7 +18,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatCard } from '../components/ui/StatCard'
 import { useHabitStore } from '../store/habitsStore'
 import { formatWeekday } from '../utils/date'
-import { moodOptions } from '../utils/habits'
+import { moodOptions, normalizeSettings } from '../utils/habits'
 import { getDashboardStats } from '../utils/stats'
 
 function formatMoney(value: number) {
@@ -33,7 +33,8 @@ export function StatsPage() {
   const habits = useHabitStore((state) => state.habits)
   const moodEntries = useHabitStore((state) => state.moodEntries)
   const diaryEntries = useHabitStore((state) => state.diaryEntries)
-  const settings = useHabitStore((state) => state.settings)
+  const rawSettings = useHabitStore((state) => state.settings)
+  const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings])
   const workLogs = useHabitStore((state) => state.workLogs)
   const stats = useMemo(
     () => getDashboardStats(habits, undefined, moodEntries, settings, workLogs),

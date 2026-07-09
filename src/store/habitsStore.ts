@@ -127,6 +127,30 @@ function normalizeRecord<T>(value: unknown): Record<string, T> {
   return isRecord(value) ? (value as Record<string, T>) : {}
 }
 
+function normalizePersistedData(state: Partial<HabitStore> | undefined) {
+  const normalizedHabits = normalizeHabits(state?.habits)
+
+  return {
+    habits: normalizedHabits,
+    moodEntries: normalizeRecord<MoodEntry>(state?.moodEntries),
+    diaryEntries: normalizeRecord<DiaryEntry>(state?.diaryEntries),
+    workLogs: normalizeRecord<WorkLog>(state?.workLogs),
+    settings: normalizeSettings(state?.settings),
+    celebratedAchievements: Array.isArray(state?.celebratedAchievements)
+      ? state.celebratedAchievements
+      : [],
+    starBalance: typeof state?.starBalance === 'number' ? state.starBalance : 0,
+    starHistory: Array.isArray(state?.starHistory) ? state.starHistory : [],
+    awards: ensureHabitStageAwards(
+      Array.isArray(state?.awards) ? state.awards : [],
+      normalizedHabits,
+    ),
+    dailyReports: normalizeRecord<DailyReport>(state?.dailyReports),
+    syncQueue: Array.isArray(state?.syncQueue) ? state.syncQueue : [],
+    lastCelebration: undefined,
+  }
+}
+
 function isValidImportPayload(data: Record<string, unknown>) {
   return data.app === 'ARMAX Habits' && Array.isArray(data.habits)
 }
@@ -1118,30 +1142,11 @@ export const useHabitStore = create<HabitStore>()(
         dailyReports: state.dailyReports,
         syncQueue: state.syncQueue,
       }),
-      migrate: (persistedState) => {
-        const state = persistedState as Partial<HabitStore> | undefined
-        const normalizedHabits = normalizeHabits(state?.habits)
-
-        return {
-          habits: normalizedHabits,
-          moodEntries: normalizeRecord<MoodEntry>(state?.moodEntries),
-          diaryEntries: normalizeRecord<DiaryEntry>(state?.diaryEntries),
-          workLogs: normalizeRecord<WorkLog>(state?.workLogs),
-          settings: normalizeSettings(state?.settings),
-          celebratedAchievements: Array.isArray(state?.celebratedAchievements)
-            ? state.celebratedAchievements
-            : [],
-          starBalance: typeof state?.starBalance === 'number' ? state.starBalance : 0,
-          starHistory: Array.isArray(state?.starHistory) ? state.starHistory : [],
-          awards: ensureHabitStageAwards(
-            Array.isArray(state?.awards) ? state.awards : [],
-            normalizedHabits,
-          ),
-          dailyReports: normalizeRecord<DailyReport>(state?.dailyReports),
-          syncQueue: Array.isArray(state?.syncQueue) ? state.syncQueue : [],
-          lastCelebration: undefined,
-        }
-      },
+      migrate: (persistedState) => normalizePersistedData(persistedState as Partial<HabitStore> | undefined),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...normalizePersistedData(persistedState as Partial<HabitStore> | undefined),
+      }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
           storageService.removeItem(storageKey)
